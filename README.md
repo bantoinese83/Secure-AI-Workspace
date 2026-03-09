@@ -4,10 +4,43 @@ A single-user AI chat workspace using Amazon Bedrock (Claude), AWS Amplify, Cogn
 
 **Repository:** [github.com/bantoinese83/Secure-AI-Workspace](https://github.com/bantoinese83/Secure-AI-Workspace)
 
+---
+
+## Quick start (no AWS)
+
+Run the app in under a minute with in-memory data and mock AI:
+
 ```bash
 git clone https://github.com/bantoinese83/Secure-AI-Workspace.git
-cd Secure-AI-Workspace && npm install && npm run dev
+cd Secure-AI-Workspace
+npm install
+npm run dev
 ```
+
+Open [http://localhost:3000](http://localhost:3000). You’re in as a dev user; no login required.
+
+---
+
+## Full setup (with AWS)
+
+For real login, persistent chats, PDF storage, and Claude via Bedrock:
+
+1. **Clone and install** (same as above).
+2. **Copy env file:** `cp .env.example .env.local`
+3. **Follow the step-by-step guide:** [docs/SETUP.md](docs/SETUP.md)  
+   It walks you through:
+   - **Cognito** — User pool + app client for login
+   - **DynamoDB** — One table (PK + SK) for chats and messages
+   - **S3** — One bucket for PDFs
+   - **Bedrock** — Enable Claude model access
+   - **IAM** — User or role with access to DynamoDB, S3, Bedrock
+   - **Tavily** — API key for web search (optional)
+4. **Fill `.env.local`** with the values from the guide.
+5. **Run:** `npm run dev` and open [http://localhost:3000](http://localhost:3000).
+
+Deploy to **AWS Amplify** when ready — instructions are in [docs/SETUP.md](docs/SETUP.md).
+
+---
 
 ## Features
 
@@ -32,52 +65,32 @@ cd Secure-AI-Workspace && npm install && npm run dev
 
 ## Prerequisites
 
-- Node.js 18+
-- AWS account with Bedrock, Cognito, S3, DynamoDB provisioned
-- Tavily API key
+- **Node.js 18+** (for all setups)
+- **AWS account** (only for full setup: Cognito, DynamoDB, S3, Bedrock)
+- **Tavily API key** (optional; only for web search)
 
-## Setup
+## Environment variables
 
-### 1. Install dependencies
-
-```bash
-npm install
-```
-
-### 2. Environment variables
-
-Create `.env.local`:
-
-```env
-# Cognito (required for auth)
-NEXT_PUBLIC_COGNITO_USER_POOL_ID=your-user-pool-id
-NEXT_PUBLIC_COGNITO_CLIENT_ID=your-client-id
-NEXT_PUBLIC_IDENTITY_POOL_ID=your-identity-pool-id  # optional
-
-# API (optional - uses /api for local dev)
-NEXT_PUBLIC_API_URL=https://your-api-gateway-url
-
-# AWS (required for production - DynamoDB, S3, Bedrock)
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your-access-key
-AWS_SECRET_ACCESS_KEY=your-secret-key
-DYNAMODB_TABLE=your-table-name
-S3_BUCKET=your-bucket-name
-BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
-
-# Tavily (for web search)
-TAVILY_API_KEY=your-tavily-key
-```
-
-Without AWS env vars (`DYNAMODB_TABLE`, `S3_BUCKET`), the app uses in-memory storage and mock AI responses.
-
-### 3. Run locally
+Copy the example file and fill in your values:
 
 ```bash
-npm run dev
+cp .env.example .env.local
 ```
 
-Without Cognito env vars, the app runs in mock mode with a dev user.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_COGNITO_USER_POOL_ID` | For login | From Cognito User Pool |
+| `NEXT_PUBLIC_COGNITO_CLIENT_ID` | For login | From Cognito App client |
+| `AWS_REGION` | For AWS | e.g. `us-east-1` |
+| `AWS_ACCESS_KEY_ID` | For AWS | IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | For AWS | IAM secret key |
+| `DYNAMODB_TABLE` | For persistence | Your DynamoDB table name |
+| `S3_BUCKET` | For PDFs | Your S3 bucket name |
+| `BEDROCK_MODEL_ID` | For AI | e.g. `anthropic.claude-3-5-sonnet-20241022-v2:0` |
+| `TAVILY_API_KEY` | For web search | From tavily.com |
+
+**If you leave AWS vars empty:** the app runs with in-memory storage and mock AI (no AWS needed).  
+**If you leave Cognito vars empty:** you’re signed in as a dev user with no password.
 
 ## Quality Checks
 
@@ -124,27 +137,19 @@ Single table with composite key `PK` (String) + `SK` (String):
 | Message | `CHAT#<chatId>` | `MSG#<msgId>` |
 | PDF | `CHAT#<chatId>` | `PDF#<pdfId>` |
 
+## Run locally
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
 ## Deployment
 
-### AWS Amplify
+**AWS Amplify:** Connect the GitHub repo, set build command `npm run build`, Node 18, and add the same env vars as in `.env.local`. Full steps: [docs/SETUP.md](docs/SETUP.md).
 
-1. Connect your repo to Amplify
-2. Set build settings:
-   - Build command: `npm run build`
-   - Output directory: `.next`
-   - Node version: 18
-3. Add environment variables in Amplify Console
-
-### Lambda Backend (production)
-
-Replace Next.js API routes with Lambda functions:
-
-- `chat-api`: CRUD chats, messages, instruction box
-- `chat-stream`: Bedrock streaming
-- `pdf-upload`: S3 trigger for PDF text extraction
-- `pdf-remove`: Delete PDF from S3 and DynamoDB
-
-See `lambda/` directory for structure (to be implemented).
+**Lambda (optional):** For a serverless API, replace Next.js API routes with Lambda + API Gateway; see `lambda/` for a starter.
 
 ## Acceptance Checklist
 
