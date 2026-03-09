@@ -1,0 +1,6 @@
+{
+  "name": "chat-stream",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Bedrock streaming Lambda - invoke Claude with response stream"
+}
