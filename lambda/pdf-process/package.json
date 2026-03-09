@@ -1,13 +1,13 @@
 {
-  "name": "chat-stream",
+  "name": "pdf-process",
   "version": "1.0.0",
   "type": "module",
-  "description": "Bedrock streaming chat with optional Tavily web search",
+  "description": "S3-triggered PDF text extraction and DynamoDB update",
   "main": "index.mjs",
   "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.1005.0",
     "@aws-sdk/client-dynamodb": "^3.1005.0",
+    "@aws-sdk/client-s3": "^3.1005.0",
     "@aws-sdk/util-dynamodb": "^3.1005.0",
-    "@tavily/core": "^0.7.2"
+    "pdf-parse": "^1.1.1"
   }
 }

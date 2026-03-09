@@ -149,7 +149,48 @@ Open [http://localhost:3000](http://localhost:3000).
 
 **AWS Amplify:** Connect the GitHub repo, set build command `npm run build`, Node 18, and add the same env vars as in `.env.local`. Full steps: [docs/SETUP.md](docs/SETUP.md).
 
-**Lambda (optional):** For a serverless API, replace Next.js API routes with Lambda + API Gateway; see `lambda/` for a starter.
+**Lambda (serverless API):** You can run the backend entirely on AWS Lambda + API Gateway (and S3 for PDFs). Three Lambdas are provided under `lambda/`:
+
+| Lambda | Purpose | Trigger |
+|--------|---------|--------|
+| **chat-api** | CRUD for chats, messages, PDF list; presigned upload URL; PDF state and delete | API Gateway HTTP API (all non-stream chat/PDF routes) |
+| **chat-stream** | Bedrock streaming + optional Tavily web search | API Gateway POST `/chats/{chatId}/stream` |
+| **pdf-process** | Extract text from uploaded PDFs and write to DynamoDB | S3 Put on the PDF bucket (key: `userId/chatId/pdfId.pdf`) |
+
+**Environment variables** (set on each Lambda, same as app):
+
+- `DYNAMODB_TABLE`, `S3_BUCKET`, `AWS_REGION` (all three Lambdas)
+- `BEDROCK_MODEL_ID` (chat-stream; default Claude model if omitted)
+- `TAVILY_API_KEY` (chat-stream; optional, for web search)
+
+**API Gateway (HTTP API):**
+
+- Route **GET/POST** `/chats` → chat-api  
+- Route **GET/PATCH/DELETE** `/chats/{chatId}` → chat-api  
+- Route **GET** `/chats/{chatId}/messages` → chat-api  
+- Route **GET** `/chats/{chatId}/pdfs` → chat-api  
+- Route **POST** `/chats/{chatId}/pdfs/upload-url` → chat-api  
+- Route **PATCH/DELETE** `/chats/{chatId}/pdfs/{pdfId}` → chat-api  
+- Route **POST** `/chats/{chatId}/stream` → chat-stream  
+
+Send **`x-user-id`** on every request (e.g. Cognito sub); chat-api and chat-stream use it for scoping.
+
+**S3 trigger for pdf-process:**
+
+- Bucket: same `S3_BUCKET` used for PDF uploads  
+- Event: Object Create (Put)  
+- Prefix/suffix: optional (e.g. no prefix so all `.pdf` keys are processed)  
+- Lambda expects key format: `{userId}/{chatId}/{pdfId}.pdf` (matches presigned-URL upload path)
+
+**Build and deploy each Lambda:**
+
+```bash
+cd lambda/chat-api && npm install && cd ../..
+cd lambda/chat-stream && npm install && cd ../..
+cd lambda/pdf-process && npm install && cd ../..
+```
+
+Zip each `lambda/<name>` directory (node_modules + index.mjs + package.json) and create/update the Lambda in the AWS Console or via CLI. Point API Gateway routes to the corresponding Lambda and add the S3 trigger for pdf-process.
 
 ## Acceptance Checklist
 
